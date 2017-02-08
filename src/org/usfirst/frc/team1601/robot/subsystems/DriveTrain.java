@@ -6,7 +6,6 @@ import org.usfirst.frc.team1601.robot.DriveTraincommands.DriveWithJoysticks;
 import com.ctre.CANTalon;
 import com.ctre.CANTalon.FeedbackDevice;
 import com.ctre.CANTalon.StatusFrameRate;
-import com.ctre.CANTalon.TalonControlMode;
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.wpilibj.ADXL362;
@@ -14,7 +13,7 @@ import edu.wpi.first.wpilibj.ADXL362.Axes;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.interfaces.Accelerometer.Range;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -59,8 +58,20 @@ public class DriveTrain extends Subsystem {
 		// TODO: Add Encoders Later On.
 		leftFront.setFeedbackDevice(FeedbackDevice.QuadEncoder);
 		leftFront.configEncoderCodesPerRev(1440); // 360 * 4
-
+		//Sets the update rate of the sensor feedback
 		this.setFrameRateUpdate(10);
+
+        /* set the peak and nominal outputs, 12V means full */
+		leftFront.configNominalOutputVoltage(+0f, -0f);
+		leftFront.configPeakOutputVoltage(+12f, -12f);
+		leftRear.configNominalOutputVoltage(+0f, -0f);
+		leftRear.configPeakOutputVoltage(+12f, -12f);
+		rightFront.configNominalOutputVoltage(+0f, -0f);
+		rightFront.configPeakOutputVoltage(+12f, -12f);
+		rightRear.configNominalOutputVoltage(+0f, -0f);
+		rightRear.configPeakOutputVoltage(+12f, -12f);
+		
+		
 
 	}
 
@@ -71,20 +82,17 @@ public class DriveTrain extends Subsystem {
 	}
 
 	public void drive(double linear, double curve) {
-		if (driveMotors[0].getControlMode() != TalonControlMode.PercentVbus) {
-			this.changeAllControlModes(TalonControlMode.PercentVbus);
-		}
 
 		drive.drive(linear, curve);
+		Timer.delay(0.005);
 	}
 
 	public void tankDrive(double left, double right) {
-		changeAllControlModes(TalonControlMode.PercentVbus);
 		driveMotors[0].set(left);
 		driveMotors[1].set(-left);
 		driveMotors[2].set(right);
 		driveMotors[3].set(-right);
-
+		Timer.delay(0.005);
 	}
 
 	public void log() {
@@ -97,26 +105,7 @@ public class DriveTrain extends Subsystem {
 		dataMonitor();
 	}
 
-	public void driveStraight(double rotations) {
-		changeAllControlModes(TalonControlMode.Position);
-		this.setAllowableError(errorTolerance);
-		this.setPIDProfile(0);
-		leftFront.set(rotations);
 
-	}
-
-	/**
-	 * Checks to see if we have reached our setpoint.
-	 * 
-	 * @return
-	 */
-	public boolean isTargetReached() {
-		if (Math.abs(leftFront.getClosedLoopError()) <= errorTolerance) {
-			return true;
-		} else {
-			return false;
-		}
-	}
 
 	/**
 	 * Reset the Encoder Values
@@ -131,40 +120,7 @@ public class DriveTrain extends Subsystem {
 	 * 
 	 * @param mode
 	 */
-	public void changeAllControlModes(TalonControlMode mode) {
-		for (int i = 0; i <= driveMotors.length; i++) {
-			if (driveMotors[i].getControlMode() != mode) {
-				driveMotors[i].changeControlMode(mode);
-			}
-		}
-	}
-
-	/**
-	 * Set the allowable integer value the PID Loop can be off by.
-	 * 
-	 * @param error
-	 */
-	public void setAllowableError(int error) {
-		leftFront.setAllowableClosedLoopErr(error);
-		this.errorTolerance = error;
-	}
-
-	public void setPIDProfile(int profile) {
-		switch (profile) {
-		case 0:
-			driveMotors[0].setProfile(0);
-			driveMotors[0].setPID(3, 0, 0);
-			break;
-		case 1:
-			driveMotors[0].setProfile(1);
-			driveMotors[0].setPID(3, 0, 0);
-			break;
-		default:
-			System.out.println("Invalid Number.");
-			break;
-
-		}
-	}
+	
 
 	/**
 	 * Returns the Gyro Angle.
@@ -175,6 +131,9 @@ public class DriveTrain extends Subsystem {
 		return gyro.getAngle();
 	}
 
+	public AHRS getMXP(){
+		return this.mxp;
+	}
 	/**
 	 * Returns the gyro reading from the NAVX Board
 	 * 
@@ -200,17 +159,10 @@ public class DriveTrain extends Subsystem {
 	 */
 	public void stop() {
 		tankDrive(0, 0);
+		Timer.delay(0.005);
 	}
 
-	/**
-	 * We are comparing the output voltage of the speed controller versuses the
-	 * voltage running across the CAN Bus.
-	 * 
-	 * @return
-	 */
-	public double getDriveTrainSpeed() {
-		return (driveMotors[0].getOutputVoltage() / driveMotors[0].getBusVoltage());
-	}
+
 
 	/**
 	 * We should reset the sensors so we can use in PID Loops
@@ -221,29 +173,24 @@ public class DriveTrain extends Subsystem {
 
 	}
 
-	/**
-	 * Here we are getting our drive Motors if we need to use the motors
-	 * elsewhere.
-	 * 
-	 * @return
-	 */
-	public CANTalon[] getAllDriveMotors() {
-		return driveMotors;
-	}
 
-	/**
-	 * Enables and disables the brake mode on the drive Motor Talons
-	 * 
-	 * @param brake
-	 */
-	public void setBrakeMode(boolean brake) {
-		for (int i = 0; i <= driveMotors.length; i++) {
-			if (driveMotors[i].getBrakeEnableDuringNeutral() != brake) {
-				driveMotors[i].enableBrakeMode(brake);
-			}
-		}
-
+	public CANTalon leftFront(){
+		return this.leftFront;
 	}
+	
+	public CANTalon leftRear(){
+		return this.leftRear;
+	}
+	
+	public CANTalon rightFront(){
+		return this.rightFront;
+	}
+	
+	public CANTalon rightRear(){
+		return this.rightRear;
+	}
+	
+
 
 	/**
 	 * Sets the update frequency for the Feedback from the sensor. Updating to

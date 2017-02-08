@@ -48,6 +48,7 @@ public class Robot extends IterativeRobot {
 	
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
+		log();
 	}
 
     public void autonomousInit() {
@@ -75,14 +76,17 @@ public class Robot extends IterativeRobot {
      * You can use it to reset subsystems before shutting down.
      */
     public void disabledInit(){
-
+    	
     }
+    
+
 
     /**
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
         Scheduler.getInstance().run();
+        log();
     }
     
     /**
@@ -90,5 +94,10 @@ public class Robot extends IterativeRobot {
      */
     public void testPeriodic() {
         LiveWindow.run();
+    }
+    
+    public void log(){
+    	driveTrain.log();
+    	
     }
 }

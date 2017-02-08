@@ -1,8 +1,6 @@
 package org.usfirst.frc.team1601.robot;
 
 import org.usfirst.frc.team1601.robot.Climbercommands.WinchOn;
-import org.usfirst.frc.team1601.robot.DriveTraincommands.DriveStraight;
-import org.usfirst.frc.team1601.robot.DriveTraincommands.RotateToAngle;
 import org.usfirst.frc.team1601.robot.Gearcommands.CloseClaw;
 import org.usfirst.frc.team1601.robot.Gearcommands.OpenClaw;
 import org.usfirst.frc.team1601.robot.Hoppercommands.HopperExhaust;
@@ -10,7 +8,6 @@ import org.usfirst.frc.team1601.robot.Hoppercommands.HopperIntake;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.buttons.JoystickButton;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * This class is the glue that binds the controls on the physical operator
@@ -51,8 +48,7 @@ public class OI {
 
 	public OI(){
 		//SmartDashboard Data
-		SmartDashboard.putData("RotateToAngle", new RotateToAngle(90));
-		SmartDashboard.putData("DriveStraight", new DriveStraight(10));
+
 		
 		//Buttons
 		aButton = new JoystickButton(operator, 1);
@@ -62,7 +58,7 @@ public class OI {
 		leftTrigger = new JoystickButton(operator, 5);
 		rightTrigger = new JoystickButton(operator, 6);
 		
-		aButton.whenPressed(new RotateToAngle(90));
+			
 		bButton.whenPressed(new OpenClaw());
 		xButton.whenPressed(new CloseClaw());
 		yButton.whenPressed(new WinchOn());

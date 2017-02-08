@@ -26,9 +26,8 @@ public class DriveWithJoysticks extends Command {
 		
 		if (Robot.oi.driverL.getRawButton(1) && Robot.oi.driverR.getRawButton(1)) {
 			speedLimit = RobotMap.speedHigh;
-		} else if (Robot.driveTrain.getDriveTrainSpeed() == .3) {
-			speedLimit = RobotMap.speedMed;
-		} else {
+		} 
+		else {
 			speedLimit = RobotMap.speedLow;
 		}
 		

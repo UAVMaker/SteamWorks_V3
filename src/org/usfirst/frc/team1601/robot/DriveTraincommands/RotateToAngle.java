@@ -1,5 +1,6 @@
 package org.usfirst.frc.team1601.robot.DriveTraincommands;
 
+import org.usfirst.frc.team1601.robot.Constants;
 import org.usfirst.frc.team1601.robot.Robot;
 
 import edu.wpi.first.wpilibj.PIDController;
@@ -10,87 +11,82 @@ import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 
 /**
- * This Command is provided to rotate to angle
- * We are using a skid steer driving system
- * which makes us have to rotate one side in the 
- * opposite direction.
- * @author Naresh
  *
  */
 public class RotateToAngle extends Command {
-	//Create a PID Controller to initiate a PID Loop
-	PIDController pid;
-	
-	//Constructor this is where we initialize the loop.
-    public RotateToAngle(double angle) {
-    	
-    	//Specify the Subsytem
-    	requires(Robot.driveTrain);
-    	//Specify the loop parameters.
-		pid = new PIDController(4, 0, 0, new PIDSource() {
-			PIDSourceType m_sourceType = PIDSourceType.kRate;
+	double angle;
+	double linearSpeed = 0;
+	double curveSpeed = 0;
+	double toleranceDegrees = 2.0f;
+	PIDController turnController;
 
-			@Override
-			public double pidGet() {
-				//Use the MXP Gyro Angle as the PID Source.
-				return Robot.driveTrain.getMXPAngle();
-			}
+	public RotateToAngle(double angle) {
+		// Use requires() here to declare subsystem dependencies
+		// eg. requires(chassis);
+		requires(Robot.driveTrain);
+		this.angle = angle;
 
-			@Override
-			public void setPIDSourceType(PIDSourceType pidSource) {
-				m_sourceType = pidSource;
-			}
+		turnController = new PIDController(Constants.ROTATE_ANGLE_P, Constants.DRIVE_STRAIGHT_I,
+				Constants.DRIVE_STRAIGHT_D, new PIDSource() {
+					PIDSourceType m_sourceType = PIDSourceType.kRate;
 
-			@Override
-			public PIDSourceType getPIDSourceType() {
-				return m_sourceType;
-			}
-		}, new PIDOutput() {
-			@Override
-			public void pidWrite(double curve) {
-				//Write our output of the PID Loop to the robot drive Motors
-				Robot.driveTrain.drive(0, curve);
-			}
-		});
-		//set the input range
-		pid.setInputRange(-180, 180);
-		
-		//Set the Minimum and Maximum Output
-		pid.setOutputRange(-1.0, 1.0);
-		
-		//Sets the tolerance we have for the loop.
-		pid.setAbsoluteTolerance(2);
-		
-		//Set the angle we want to rotate toward.
-		pid.setSetpoint(angle);
-		//Add a LiveWindow to make it easier to tune.
-		LiveWindow.addActuator("DriveTrain", "RotateToAngle", pid);
-    }
+					@Override
+					public double pidGet() {
+						return Robot.driveTrain.getMXPAngle();
+					}
 
-    // Called just before this Command runs the first time
-    protected void initialize() {
-		Robot.driveTrain.reset();
-		pid.reset();
-		pid.enable();
-    }
+					@Override
+					public void setPIDSourceType(PIDSourceType pidSource) {
+						m_sourceType = pidSource;
+					}
 
-    // Called repeatedly when this Command is scheduled to run
-    protected void execute() {
-    }
+					@Override
+					public PIDSourceType getPIDSourceType() {
+						return m_sourceType;
+					}
+				}, new PIDOutput() {
+					@Override
+					public void pidWrite(double output) {
+						curveSpeed = output;
+					}
+				});
 
-    // Make this return true when this Command no longer needs to run execute()
-    protected boolean isFinished() {
-        return pid.onTarget();
-    }
+		turnController.setInputRange(-180.0f, 180.0f);
+		turnController.setOutputRange(-1.0, 1.0);
+		turnController.setAbsoluteTolerance(toleranceDegrees);
+		turnController.setContinuous(true);
 
-    // Called once after isFinished returns true
-    protected void end() {
-    	pid.disable();
-    	Robot.driveTrain.tankDrive(0, 0);
-    }
+		LiveWindow.addActuator("DriveSystem", "RotateController", turnController);
 
-    // Called when another command which requires one or more of the same
-    // subsystems is scheduled to run
-    protected void interrupted() {
-    }
+	}
+
+	// Called just before this Command runs the first time
+	protected void initialize() {
+		turnController.reset();
+		turnController.setSetpoint(angle);
+		turnController.enable();
+	}
+
+	// Called repeatedly when this Command is scheduled to run
+	protected void execute() {
+		Robot.driveTrain.drive(linearSpeed, curveSpeed);
+	}
+
+	// Make this return true when this Command no longer needs to run execute()
+	protected boolean isFinished() {
+		return turnController.onTarget();
+	}
+
+	// Called once after isFinished returns true
+	protected void end() {
+		turnController.disable();
+		Robot.driveTrain.stop();
+
+	}
+
+	// Called when another command which requires one or more of the same
+	// subsystems is scheduled to run
+	protected void interrupted() {
+	}
+
 }
